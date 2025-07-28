@@ -5,6 +5,7 @@ import carnage.playerWelcomer.listeners.PlayerJoinListener;
 import carnage.playerWelcomer.managers.ConfigManager;
 import carnage.playerWelcomer.managers.DataManager;
 import carnage.playerWelcomer.managers.EconomyManager;
+import carnage.playerWelcomer.commands.ReloadCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
 
@@ -84,6 +85,7 @@ public final class PlayerWelcomer extends JavaPlugin {
         }
         if (configManager.isWelcomeCommandEnabled()) {
             getCommand("welcome").setExecutor(new WelcomeCommand(this));
+            getCommand("welcomereload").setExecutor(new ReloadCommand(this));
         }
     }
 

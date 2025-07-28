@@ -7,3 +7,10 @@ commands:
   welcome:
     description: Welcome a new player and receive a reward
     usage: /<command> <player>
+  welcomereload:
+    description: Reloads the plugin's configuration
+    usage: /<command>
+permissions:
+  playerwelcomer.admin:
+    description: Allows using the /welcomereload command
+    default: op

@@ -6,9 +6,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Manages plugin configuration, handling loading and retrieval of settings.
+ * Adheres to SRP by focusing solely on configuration management.
  */
 public class ConfigManager {
     private static final String CONFIG_FILE_NAME = "config.yml";
@@ -21,7 +23,8 @@ public class ConfigManager {
 
     /**
      * Loads the configuration file, creating it from defaults if necessary.
-     * @throws RuntimeException if loading fails
+     * Validates the number of first-join message lines against line_count.
+     * @throws RuntimeException if loading or validation fails
      */
     public void loadConfig() {
         File configFile = new File(plugin.getDataFolder(), CONFIG_FILE_NAME);
@@ -29,6 +32,20 @@ public class ConfigManager {
             plugin.saveResource(CONFIG_FILE_NAME, false);
         }
         config = YamlConfiguration.loadConfiguration(configFile);
+        validateFirstJoinMessageLines();
+    }
+
+    /**
+     * Validates that the number of configured first-join message lines matches line_count.
+     * Empty lines ("") are valid and counted as lines.
+     * @throws RuntimeException if validation fails
+     */
+    private void validateFirstJoinMessageLines() {
+        int expectedLineCount = config.getInt("first-join.line_count", 5);
+        String[] messages = getFirstJoinMessage();
+        if (messages.length != expectedLineCount) {
+            throw new RuntimeException("First-join message has " + messages.length + " lines, but line_count is set to " + expectedLineCount);
+        }
     }
 
     /**
@@ -52,15 +69,17 @@ public class ConfigManager {
     }
 
     /**
-     * Grabs the multi-line first-join message with placeholders.
+     * Retrieves the multi-line first-join message with placeholders.
+     * Empty lines ("") are preserved as blank lines in the output.
      * @return array of message lines
      */
     public String[] getFirstJoinMessage() {
         return new String[] {
                 config.getString("first-join.message.line1", "&8&m===================="),
-                config.getString("first-join.message.line2", "&a&lWelcome &e%player_name% &7to the server!"),
-                config.getString("first-join.message.line3", "&7First join! &8[&c%unique_join_count%&8]"),
-                config.getString("first-join.message.line4", "&8&m====================")
+                config.getString("first-join.message.line2", ""),
+                config.getString("first-join.message.line3", "&a&lWelcome &e%player_name% &7to the server! &8[&f#%unique_join_count%&8]"),
+                config.getString("first-join.message.line4", ""),
+                config.getString("first-join.message.line5", "&8&m====================")
         };
     }
 

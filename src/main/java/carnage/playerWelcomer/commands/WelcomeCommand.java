@@ -18,6 +18,8 @@ public class WelcomeCommand implements CommandExecutor {
     private static final String PLAYER_NOT_FOUND_MESSAGE = ChatColor.RED + "Player not found!";
     private static final String SELF_WELCOME_MESSAGE = ChatColor.RED + "You cannot welcome yourself!";
     private static final String WELCOME_EXPIRED_MESSAGE = ChatColor.RED + "This player can no longer be welcomed!";
+    private static final String RELOAD_PERMISSION_MESSAGE = ChatColor.RED + "You do not have permission to reload the plugin!";
+    private static final String RELOAD_SUCCESS_MESSAGE = ChatColor.GREEN + "PlayerWelcomer configuration and data reloaded successfully!";
     private final PlayerWelcomer plugin;
 
     public WelcomeCommand(PlayerWelcomer plugin) {
@@ -26,6 +28,37 @@ public class WelcomeCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (label.equalsIgnoreCase("welcomereload")) {
+            return handleReloadCommand(sender);
+        }
+        return handleWelcomeCommand(sender, args);
+    }
+
+    /**
+     * Handles the /welcomereload command to reload config and reset data.
+     * @param sender the command sender
+     * @return true if the command was processed
+     */
+    private boolean handleReloadCommand(CommandSender sender) {
+        if (!sender.hasPermission("playerwelcomer.admin")) {
+            sender.sendMessage(RELOAD_PERMISSION_MESSAGE);
+            return true;
+        }
+        plugin.getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getConfigManager().loadConfig();
+            plugin.getDataManager().resetDataAsync();
+            sender.sendMessage(RELOAD_SUCCESS_MESSAGE);
+        });
+        return true;
+    }
+
+    /**
+     * Handles the /welcome command.
+     * @param sender the command sender
+     * @param args command arguments
+     * @return true if the command was processed
+     */
+    private boolean handleWelcomeCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
             sender.sendMessage(PLAYER_ONLY_MESSAGE);
             return true;

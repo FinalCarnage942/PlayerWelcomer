@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Manages persistent data for welcomed players and command cooldowns.
+ * Uses thread-safe collections for performance in a multi-threaded environment.
  */
 public class DataManager {
     private static final String DATA_FILE_NAME = "data.yml";
@@ -57,6 +58,28 @@ public class DataManager {
                     .map(UUID::fromString)
                     .collect(Collectors.toSet()));
         }
+    }
+
+    /**
+     * Resets the data file to its default state and reloads it.
+     */
+    public void resetDataAsync() {
+        plugin.getScheduler().runTaskAsynchronously(plugin, () -> {
+            synchronized (data) {
+                welcomedPlayers.clear();
+                uniqueJoinCount = 0;
+                cooldowns.clear();
+                joinTimes.clear();
+                data.set("unique-join-count", 0);
+                data.set("welcomed-players", new java.util.ArrayList<String>());
+                try {
+                    data.save(dataFile);
+                } catch (IOException e) {
+                    plugin.getPluginLogger().severe("Failed to reset data: " + e.getMessage());
+                }
+                loadData();
+            }
+        });
     }
 
     /**

@@ -18,6 +18,7 @@ public class PlayerJoinListener implements Listener {
 
     /**
      * Handles player join events, broadcasting a first-join message for new players.
+     * Empty lines are rendered as blank lines in the chat.
      * @param event the player join event
      */
     @EventHandler
@@ -28,9 +29,9 @@ public class PlayerJoinListener implements Listener {
             }
             String[] messages = plugin.getConfigManager().getFirstJoinMessage();
             for (String message : messages) {
-                String formattedMessage = message
+                String formattedMessage = message != null ? message
                         .replace("%player_name%", event.getPlayer().getName())
-                        .replace("%unique_join_count%", String.valueOf(plugin.getDataManager().getUniqueJoinCount() + 1));
+                        .replace("%unique_join_count%", String.valueOf(plugin.getDataManager().getUniqueJoinCount() + 1)) : "";
                 plugin.getServer().broadcastMessage(ChatColor.translateAlternateColorCodes('&', formattedMessage));
             }
             plugin.getDataManager().recordJoinTime(event.getPlayer().getUniqueId());
