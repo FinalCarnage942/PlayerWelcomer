@@ -1,7 +1,6 @@
 package carnage.playerWelcomer.commands;
 
 import carnage.playerWelcomer.PlayerWelcomer;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -13,13 +12,11 @@ import java.util.UUID;
  * Handles the /welcome command, allowing players to welcome new players with rewards.
  */
 public class WelcomeCommand implements CommandExecutor {
-    private static final String USAGE_MESSAGE = ChatColor.RED + "Usage: /welcome <player>";
-    private static final String PLAYER_ONLY_MESSAGE = ChatColor.RED + "This command can only be used by players!";
-    private static final String PLAYER_NOT_FOUND_MESSAGE = ChatColor.RED + "Player not found!";
-    private static final String SELF_WELCOME_MESSAGE = ChatColor.RED + "You cannot welcome yourself!";
-    private static final String WELCOME_EXPIRED_MESSAGE = ChatColor.RED + "This player can no longer be welcomed!";
-    private static final String RELOAD_PERMISSION_MESSAGE = ChatColor.RED + "You do not have permission to reload the plugin!";
-    private static final String RELOAD_SUCCESS_MESSAGE = ChatColor.GREEN + "PlayerWelcomer configuration and data reloaded successfully!";
+    private static final String USAGE_MESSAGE = "&cUsage: /welcome <player>";
+    private static final String PLAYER_ONLY_MESSAGE = "&cThis command can only be used by players!";
+    private static final String PLAYER_NOT_FOUND_MESSAGE = "&cPlayer not found!";
+    private static final String SELF_WELCOME_MESSAGE = "&cYou cannot welcome yourself!";
+    private static final String WELCOME_EXPIRED_MESSAGE = "&cThis player can no longer be welcomed!";
     private final PlayerWelcomer plugin;
 
     public WelcomeCommand(PlayerWelcomer plugin) {
@@ -28,43 +25,12 @@ public class WelcomeCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (label.equalsIgnoreCase("welcomereload")) {
-            return handleReloadCommand(sender);
-        }
-        return handleWelcomeCommand(sender, args);
-    }
-
-    /**
-     * Handles the /welcomereload command to reload config and reset data.
-     * @param sender the command sender
-     * @return true if the command was processed
-     */
-    private boolean handleReloadCommand(CommandSender sender) {
-        if (!sender.hasPermission("playerwelcomer.admin")) {
-            sender.sendMessage(RELOAD_PERMISSION_MESSAGE);
-            return true;
-        }
-        plugin.getScheduler().runTaskAsynchronously(plugin, () -> {
-            plugin.getConfigManager().loadConfig();
-            plugin.getDataManager().resetDataAsync();
-            sender.sendMessage(RELOAD_SUCCESS_MESSAGE);
-        });
-        return true;
-    }
-
-    /**
-     * Handles the /welcome command.
-     * @param sender the command sender
-     * @param args command arguments
-     * @return true if the command was processed
-     */
-    private boolean handleWelcomeCommand(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(PLAYER_ONLY_MESSAGE);
+            sender.sendMessage(plugin.getConfigManager().processMessage(PLAYER_ONLY_MESSAGE));
             return true;
         }
         if (args.length != 1) {
-            sender.sendMessage(USAGE_MESSAGE);
+            sender.sendMessage(plugin.getConfigManager().processMessage(USAGE_MESSAGE));
             return true;
         }
 
@@ -81,38 +47,36 @@ public class WelcomeCommand implements CommandExecutor {
     private void executeWelcomeAsync(Player player, String targetName) {
         plugin.getScheduler().runTaskAsynchronously(plugin, () -> {
             if (!plugin.getConfigManager().isWelcomeCommandEnabled()) {
-                player.sendMessage(ChatColor.RED + "The welcome command is disabled!");
+                player.sendMessage(plugin.getConfigManager().processMessage("&cThe welcome command is disabled!"));
                 return;
             }
 
             Player target = plugin.getServer().getPlayer(targetName);
             if (target == null) {
-                player.sendMessage(PLAYER_NOT_FOUND_MESSAGE);
+                player.sendMessage(plugin.getConfigManager().processMessage(PLAYER_NOT_FOUND_MESSAGE));
                 return;
             }
 
             if (target.equals(player)) {
-                player.sendMessage(SELF_WELCOME_MESSAGE);
+                player.sendMessage(plugin.getConfigManager().processMessage(SELF_WELCOME_MESSAGE));
                 return;
             }
 
             UUID targetId = target.getUniqueId();
             if (!plugin.getDataManager().isNewPlayer(targetId)) {
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                        plugin.getConfigManager().getNoNewPlayersMessage()));
+                player.sendMessage(plugin.getConfigManager().getNoNewPlayersMessage());
                 return;
             }
 
             if (!plugin.getDataManager().isWithinWelcomeWindow(targetId)) {
-                player.sendMessage(WELCOME_EXPIRED_MESSAGE);
+                player.sendMessage(plugin.getConfigManager().processMessage(WELCOME_EXPIRED_MESSAGE));
                 return;
             }
 
             if (plugin.getDataManager().isOnCooldown(player.getUniqueId())) {
                 long remaining = plugin.getDataManager().getRemainingCooldown(player.getUniqueId());
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                        plugin.getConfigManager().getCooldownMessage()
-                                .replace("%seconds%", String.valueOf(remaining))));
+                player.sendMessage(plugin.getConfigManager().getCooldownMessage()
+                        .replace("%seconds%", String.valueOf(remaining)));
                 return;
             }
 
@@ -130,7 +94,7 @@ public class WelcomeCommand implements CommandExecutor {
         String welcomeMessage = plugin.getConfigManager().getWelcomeMessage()
                 .replace("%target_name%", target.getName())
                 .replace("%player_name%", sender.getName());
-        plugin.getServer().broadcastMessage(ChatColor.translateAlternateColorCodes('&', welcomeMessage));
+        plugin.getServer().broadcastMessage(welcomeMessage);
     }
 
     /**
@@ -143,8 +107,7 @@ public class WelcomeCommand implements CommandExecutor {
         plugin.getEconomyManager().giveReward(sender, reward);
         plugin.getDataManager().addWelcomedPlayer(targetId);
         plugin.getDataManager().setCooldown(sender.getUniqueId());
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                plugin.getConfigManager().getWelcomeSuccessMessage()
-                        .replace("%reward_amount%", String.valueOf(reward))));
+        sender.sendMessage(plugin.getConfigManager().getWelcomeSuccessMessage()
+                .replace("%reward_amount%", String.valueOf(reward)));
     }
 }

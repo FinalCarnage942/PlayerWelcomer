@@ -1,7 +1,6 @@
 package carnage.playerWelcomer.listeners;
 
 import carnage.playerWelcomer.PlayerWelcomer;
-import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -29,10 +28,9 @@ public class PlayerJoinListener implements Listener {
             }
             String[] messages = plugin.getConfigManager().getFirstJoinMessage();
             for (String message : messages) {
-                String formattedMessage = message != null ? message
-                        .replace("%player_name%", event.getPlayer().getName())
-                        .replace("%unique_join_count%", String.valueOf(plugin.getDataManager().getUniqueJoinCount() + 1)) : "";
-                plugin.getServer().broadcastMessage(ChatColor.translateAlternateColorCodes('&', formattedMessage));
+                String formattedMessage = message.replace("%player_name%", event.getPlayer().getName())
+                        .replace("%unique_join_count%", String.valueOf(plugin.getDataManager().getUniqueJoinCount() + 1));
+                plugin.getServer().broadcastMessage(formattedMessage);
             }
             plugin.getDataManager().recordJoinTime(event.getPlayer().getUniqueId());
         });
