@@ -1,0 +1,16 @@
+first-join:
+  enabled: true
+  message:
+    line1: "&8&m===================="
+    line2: "&a&lWelcome &e%player_name% &7to the server!"
+    line3: "&7First join! &8[&c%unique_join_count%&8]"
+    line4: "&8&m===================="
+
+welcome-command:
+  enabled: true
+  cooldown: 60
+  reward-amount: 100.0
+  welcome-message: "&aWelcome to the server, &e%target_name%&a! Welcomed by &e%player_name%"
+  success-message: "&aYou welcomed a new player and received %reward_amount% coins!"
+  no-new-players: "&cThat player has already been welcomed!"
+  cooldown-message: "&cPlease wait %seconds% seconds before using this command again!"

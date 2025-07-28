@@ -1,0 +1,9 @@
+name: PlayerWelcomer
+version: '1.0-SNAPSHOT'
+main: carnage.playerWelcomer.PlayerWelcomer
+api-version: '1.21'
+depend: [Vault]
+commands:
+  welcome:
+    description: Welcome a new player and receive a reward
+    usage: /<command> <player>
