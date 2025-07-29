@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 /**
  * Manages plugin configuration, handling loading and retrieval of settings.
+ * Adheres to SRP by focusing solely on configuration management.
  */
 public class ConfigManager {
     private static final String CONFIG_FILE_NAME = "config.yml";
@@ -92,11 +93,11 @@ public class ConfigManager {
      */
     private String[] getFirstJoinMessageRaw() {
         return new String[] {
-                config.getString("first-join.message.line1", "&8&m===================="),
+                config.getString("first-join.message.line1", "#808080&m===================="),
                 config.getString("first-join.message.line2", ""),
-                config.getString("first-join.message.line3", "&a&lWelcome &e%player_name% &7to the server! &8[&f#%unique_join_count%&8]"),
+                config.getString("first-join.message.line3", "#00FF00&lWelcome #FFFF00%player_name% #808080to the server! #808080[&f#%unique_join_count%#808080]"),
                 config.getString("first-join.message.line4", ""),
-                config.getString("first-join.message.line5", "&8&m====================")
+                config.getString("first-join.message.line5", "#808080&m====================")
         };
     }
 
@@ -128,11 +129,27 @@ public class ConfigManager {
     }
 
     /**
-     * Gets the reward amount for the welcome command.
+     * Gets the reward type for the welcome command ("currency" or "crate_key").
+     * @return reward type
+     */
+    public String getWelcomeRewardType() {
+        return config.getString("welcome-command.reward-type", "currency");
+    }
+
+    /**
+     * Gets the reward amount for the welcome command (currency or crate keys).
      * @return reward amount
      */
-    public double getWelcomeReward() {
+    public double getWelcomeRewardAmount() {
         return config.getDouble("welcome-command.reward-amount", 100.0);
+    }
+
+    /**
+     * Gets the crate key name for the welcome command when reward-type is "crate_key".
+     * @return crate key name
+     */
+    public String getWelcomeCrateKeyName() {
+        return config.getString("welcome-command.crate-key-name", "example_key");
     }
 
     /**
@@ -140,15 +157,20 @@ public class ConfigManager {
      * @return welcome message with placeholders
      */
     public String getWelcomeMessage() {
-        return processMessage(config.getString("welcome-command.welcome-message", "&aWelcome to the server, &e%target_name%&a! Welcomed by &e%player_name%"));
+        return processMessage(config.getString("welcome-command.welcome-message", "#00FF00Welcome to the server, #FFFF00%target_name%#00FF00! Welcomed by #FFFF00%player_name%"));
     }
 
     /**
      * Gets the success message for the welcome command with processed color codes.
+     * Dynamically adjusts based on reward-type.
+     * @param rewardType the type of reward ("currency" or "crate_key")
      * @return success message with placeholders
      */
-    public String getWelcomeSuccessMessage() {
-        return processMessage(config.getString("welcome-command.success-message", "&aYou welcomed a new player and received %reward_amount% coins!"));
+    public String getWelcomeSuccessMessage(String rewardType) {
+        String defaultMessage = rewardType.equals("crate_key") ?
+                "#00FF00You welcomed a new player and received %reward_amount% crate key(s)!" :
+                "#00FF00You welcomed a new player and received %reward_amount% coins!";
+        return processMessage(config.getString("welcome-command.success-message", defaultMessage));
     }
 
     /**
@@ -156,7 +178,7 @@ public class ConfigManager {
      * @return no new players message
      */
     public String getNoNewPlayersMessage() {
-        return processMessage(config.getString("welcome-command.no-new-players", "&cThat player has already been welcomed!"));
+        return processMessage(config.getString("welcome-command.no-new-players", "#FF0000That player has already been welcomed!"));
     }
 
     /**
@@ -164,6 +186,6 @@ public class ConfigManager {
      * @return cooldown message with placeholders
      */
     public String getCooldownMessage() {
-        return processMessage(config.getString("welcome-command.cooldown-message", "&cPlease wait %seconds% seconds before using this command again!"));
+        return processMessage(config.getString("welcome-command.cooldown-message", "#FF0000Please wait %seconds% seconds before using this command again!"));
     }
 }
