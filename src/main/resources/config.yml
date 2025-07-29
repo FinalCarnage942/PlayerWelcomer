@@ -1,6 +1,7 @@
 # PlayerWelcomer Configuration
+
 # Configure welcome messages and rewards for new players.
-# Supports hex color codes (e.g., #FF0000) and legacy Minecraft color codes (e.g., &a).
+# Supports hex color codes (e.g., #FF0000) and legacy Minecraft color codes (ex. : &a).
 
 first-join:
   enabled: true # Enable/disable first-join welcome messages (true/false)
@@ -15,21 +16,31 @@ first-join:
 welcome-command:
   enabled: true # Enable/disable the /welcome command (true/false)
   cooldown: 60 # Cooldown in seconds after a successful /welcome
+
   # Reward type for the /welcome command. Choose one:
-  # - "currency": Gives in-game currency via Vault (requires Vault and an economy plugin like EssentialsX)
+  # - "currency": Gives in-game currency via a selected currency plugin
   # - "crate_key": Gives crate keys via Excellent Crates (requires Excellent Crates plugin)
-  reward-type: "crate_key"
+  reward-type: "currency"
+
+  # Currency type for currency rewards. Choose one:
+  # - "vault": Uses Vault with an economy plugin (ex. : EssentialsX for coins)
+  # - "playerpoints": Uses PlayerPoints for points
+  # - "coinsengine:<currency_id>": Uses CoinsEngine with a specific currency (ex. : "coinsengine:gold")
+  reward-currency: "playerpoints"
+
   # Amount of reward:
-  # - For "currency", specifies the amount of money (e.g., 100.0 for 100 coins)
-  # - For "crate_key", specifies the number of keys (must be a positive integer, e.g., 1)
-  reward-amount: 1
-  # Crate key ID from Excellent Crates (e.g., "Test Key"). Required only if reward-type is "crate_key".
+  # - For "currency", specifies the amount of money/points (ex. : 100.0 for 100 coins, 10 for 10 points)
+  # - For "crate_key", specifies the number of keys (must be a positive integer, ex. : 1)
+  reward-amount: 100.0
+
+  # Crate key ID from Excellent Crates (ex. : "Test Key"). Required only if reward-type is "crate_key".
   # Can be omitted if reward-type is "currency".
   crate-key-name: "Test Key"
   welcome-message: "#00FF00Welcome to the server, #FFFF00%target_name%#00FF00! Welcomed by #FFFF00%player_name%" # Broadcast message for /welcome
+
   # Success message shown to the player who used /welcome. Adapts to reward-type:
-  # - For "currency": Shows amount of coins (e.g., "100 coins")
-  # - For "crate_key": Shows amount and key name (e.g., "1 Test Key key(s)")
-  success-message: "#00FF00You welcomed a new player and received #ADD8E6%reward_amount% %reward_display%!"
+  # - For "currency": Shows amount and currency name (ex. : "100 coins", "10 points", "100 Gold")
+  # - For "crate_key": Shows amount and key name (ex. : "1 Test Key key(s)")
+  success-message: "#00FF00You welcomed a new player and received #ADD8E6%reward_amount% %reward_display%!" # Use %reward_amount% and %reward_display%
   no-new-players: "#FF0000That player has already been welcomed!" # Message when target is not a new player
   cooldown-message: "#FF0000Please wait %seconds% seconds before using this command again!" # Message when on cooldown

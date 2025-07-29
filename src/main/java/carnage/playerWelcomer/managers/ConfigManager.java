@@ -37,6 +37,7 @@ public class ConfigManager {
         }
         config = YamlConfiguration.loadConfiguration(configFile);
         validateFirstJoinMessageLines();
+        validateRewardSettings();
     }
 
     /**
@@ -49,6 +50,30 @@ public class ConfigManager {
         String[] messages = getFirstJoinMessageRaw();
         if (messages.length != expectedLineCount) {
             throw new RuntimeException("First-join message has " + messages.length + " lines, but line_count is set to " + expectedLineCount);
+        }
+    }
+
+    /**
+     * Validates reward settings in the configuration.
+     * @throws RuntimeException if validation fails
+     */
+    private void validateRewardSettings() {
+        String rewardType = getWelcomeRewardType();
+        if (!rewardType.equalsIgnoreCase("currency") && !rewardType.equalsIgnoreCase("crate_key")) {
+            throw new RuntimeException("Invalid reward-type: " + rewardType + ". Must be 'currency' or 'crate_key'.");
+        }
+        if (rewardType.equalsIgnoreCase("currency")) {
+            String currencyType = getWelcomeCurrencyType();
+            if (currencyType == null || currencyType.trim().isEmpty()) {
+                throw new RuntimeException("Currency type is missing or empty for reward-type 'currency'.");
+            }
+            if (currencyType.toLowerCase().startsWith("coinsengine:") && currencyType.length() <= "coinsengine:".length()) {
+                throw new RuntimeException("Invalid CoinsEngine currency ID in reward-currency: " + currencyType);
+            }
+        }
+        double rewardAmount = getWelcomeRewardAmount();
+        if (rewardAmount <= 0) {
+            throw new RuntimeException("Reward amount must be positive: " + rewardAmount);
         }
     }
 
@@ -137,7 +162,15 @@ public class ConfigManager {
     }
 
     /**
-     * Gets the reward amount for the welcome command (currency or crate keys).
+     * Gets the currency type for currency rewards (e.g., "vault", "playerpoints", "coinsengine:gold").
+     * @return currency type
+     */
+    public String getWelcomeCurrencyType() {
+        return config.getString("welcome-command.reward-currency", "vault");
+    }
+
+    /**
+     * Gets the reward amount for the welcome command.
      * @return reward amount
      */
     public double getWelcomeRewardAmount() {
@@ -149,7 +182,7 @@ public class ConfigManager {
      * @return crate key name
      */
     public String getWelcomeCrateKeyName() {
-        return config.getString("welcome-command.crate-key-name", "example_key");
+        return config.getString("welcome-command.crate-key-name", "Test Key");
     }
 
     /**
@@ -167,9 +200,9 @@ public class ConfigManager {
      * @return success message with placeholders
      */
     public String getWelcomeSuccessMessage(String rewardType) {
-        String defaultMessage = rewardType.equals("crate_key") ?
-                "#00FF00You welcomed a new player and received %reward_amount% crate key(s)!" :
-                "#00FF00You welcomed a new player and received %reward_amount% coins!";
+        String defaultMessage = rewardType.equalsIgnoreCase("crate_key") ?
+                "#00FF00You welcomed a new player and received #ADD8E6%reward_amount% %reward_display%!" :
+                "#00FF00You welcomed a new player and received #ADD8E6%reward_amount% %reward_display%!";
         return processMessage(config.getString("welcome-command.success-message", defaultMessage));
     }
 

@@ -98,13 +98,14 @@ public class WelcomeCommand implements CommandExecutor {
      */
     private void rewardAndUpdatePlayer(Player sender, UUID targetId) {
         String rewardType = plugin.getConfigManager().getWelcomeRewardType();
+        String currencyType = plugin.getConfigManager().getWelcomeCurrencyType();
         double rewardAmount = plugin.getConfigManager().getWelcomeRewardAmount();
         String crateKeyName = plugin.getConfigManager().getWelcomeCrateKeyName();
-        boolean success = plugin.getRewardManager().giveReward(sender, rewardType, rewardAmount, crateKeyName);
+        boolean success = plugin.getRewardManager().giveReward(sender, rewardType, currencyType, rewardAmount, crateKeyName);
         plugin.getDataManager().addWelcomedPlayer(targetId);
         plugin.getDataManager().setCooldown(sender.getUniqueId());
         if (success) {
-            String rewardDisplay = plugin.getRewardManager().getRewardDisplay(rewardType, crateKeyName);
+            String rewardDisplay = plugin.getRewardManager().getRewardDisplay(rewardType, currencyType, crateKeyName);
             String successMessage = plugin.getConfigManager().getWelcomeSuccessMessage(rewardType)
                     .replace("%reward_amount%", String.valueOf((int) rewardAmount))
                     .replace("%reward_display%", rewardDisplay);

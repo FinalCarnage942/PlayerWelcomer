@@ -28,7 +28,7 @@ public final class PlayerWelcomer extends JavaPlugin {
             disablePlugin();
             return;
         }
-        setupRewards();
+        validateRewardAvailability();
         registerComponents();
         logger.info("PlayerWelcomer enabled successfully!");
     }
@@ -67,19 +67,16 @@ public final class PlayerWelcomer extends JavaPlugin {
     }
 
     /**
-     * Sets up the reward system (currency and crate keys) if enabled.
+     * Validates the availability of the configured reward system.
      */
-    private void setupRewards() {
+    private void validateRewardAvailability() {
         if (configManager.isWelcomeCommandEnabled()) {
             String rewardType = configManager.getWelcomeRewardType();
-            if (rewardType.equalsIgnoreCase("currency")) {
-                if (!rewardManager.setupEconomy()) {
-                    logger.warning("Vault or economy plugin not found! Currency rewards will be disabled. Ensure Vault and an economy plugin (e.g., EssentialsX) are installed.");
-                } else {
-                    logger.info("Currency rewards enabled with Vault and economy provider.");
-                }
-            } else if (rewardType.equalsIgnoreCase("crate_key") && !rewardManager.isExcellentCratesAvailable()) {
-                logger.warning("Excellent Crates not found! Crate key rewards will be disabled. Ensure Excellent Crates is installed.");
+            String currencyType = configManager.getWelcomeCurrencyType();
+            if (!rewardManager.isRewardAvailable(rewardType, currencyType)) {
+                logger.warning("Configured reward type '" + rewardType + "' with currency '" + currencyType + "' is not available. Rewards may fail.");
+            } else {
+                logger.info("Reward type '" + rewardType + "' with currency '" + currencyType + "' is available.");
             }
         }
     }
