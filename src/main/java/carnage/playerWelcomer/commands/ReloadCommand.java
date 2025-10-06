@@ -7,12 +7,13 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
 /**
- * Handles the /welcomereload command to reload the plugin's configuration and reset data.
+ * Handles the /welcomereload command to reload plugin configuration and data.
  */
 public class ReloadCommand implements CommandExecutor {
-    private static final String NO_PERMISSION_MESSAGE = ChatColor.RED + "You do not have permission to use this command!";
-    private static final String RELOAD_SUCCESS_MESSAGE = ChatColor.GREEN + "PlayerWelcomer configuration and data reloaded successfully!";
-    private static final String RELOAD_FAILED_MESSAGE = ChatColor.RED + "Failed to reload configuration or data: ";
+    private static final String NO_PERMISSION = ChatColor.RED + "You lack permission to use this command!";
+    private static final String RELOAD_SUCCESS = ChatColor.GREEN + "Configuration and data reloaded successfully!";
+    private static final String RELOAD_FAILED = ChatColor.RED + "Failed to reload: ";
+
     private final PlayerWelcomer plugin;
 
     public ReloadCommand(PlayerWelcomer plugin) {
@@ -22,22 +23,24 @@ public class ReloadCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("playerwelcomer.admin")) {
-            sender.sendMessage(NO_PERMISSION_MESSAGE);
+            sender.sendMessage(NO_PERMISSION);
             return true;
         }
 
-        plugin.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                plugin.getConfigManager().loadConfig();
-                plugin.getDataManager().resetDataAsync();
-                sender.sendMessage(RELOAD_SUCCESS_MESSAGE);
-                plugin.getPluginLogger().info("Configuration and data reloaded by " + sender.getName());
-            } catch (Exception e) {
-                sender.sendMessage(RELOAD_FAILED_MESSAGE + e.getMessage());
-                plugin.getPluginLogger().severe("Failed to reload configuration or data: " + e.getMessage());
-            }
-        });
-
+        plugin.getScheduler().runTaskAsynchronously(plugin, () -> reloadPlugin(sender));
         return true;
+    }
+
+    private void reloadPlugin(CommandSender sender) {
+        try {
+            plugin.getConfigManager().loadConfig();
+            plugin.getDataManager().resetDataAsync();
+            sender.sendMessage(RELOAD_SUCCESS);
+            plugin.getPluginLogger().info("Reloaded by " + sender.getName());
+        } catch (Exception e) {
+            String errorMessage = RELOAD_FAILED + e.getMessage();
+            sender.sendMessage(errorMessage);
+            plugin.getPluginLogger().severe(errorMessage);
+        }
     }
 }

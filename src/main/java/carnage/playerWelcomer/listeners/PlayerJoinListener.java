@@ -23,16 +23,24 @@ public class PlayerJoinListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         plugin.getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.getDataManager().recordJoinTime(event.getPlayer().getUniqueId());
+
+            // Only show first-join message if enabled
+            if (!plugin.getConfigManager().isFirstJoinMessageEnabled()) {
+                return;
+            }
+
             if (!plugin.getDataManager().isNewPlayer(event.getPlayer().getUniqueId())) {
                 return;
             }
+
             String[] messages = plugin.getConfigManager().getFirstJoinMessage();
             for (String message : messages) {
-                String formattedMessage = message.replace("%player_name%", event.getPlayer().getName())
+                String formattedMessage = message
+                        .replace("%player_name%", event.getPlayer().getName())
                         .replace("%unique_join_count%", String.valueOf(plugin.getDataManager().getUniqueJoinCount() + 1));
                 plugin.getServer().broadcastMessage(formattedMessage);
             }
-            plugin.getDataManager().recordJoinTime(event.getPlayer().getUniqueId());
         });
     }
 }

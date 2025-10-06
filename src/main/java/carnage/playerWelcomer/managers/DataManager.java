@@ -19,12 +19,15 @@ import java.util.stream.Collectors;
 public class DataManager {
     private static final String DATA_FILE_NAME = "data.yml";
     private static final long WELCOME_WINDOW_MS = 60_000L; // 60 seconds
+
     private final PlayerWelcomer plugin;
     private final File dataFile;
     private final FileConfiguration data;
+
     private final Set<UUID> welcomedPlayers;
     private final ConcurrentHashMap<UUID, Long> cooldowns;
     private final ConcurrentHashMap<UUID, Long> joinTimes;
+
     private int uniqueJoinCount;
 
     public DataManager(PlayerWelcomer plugin) {
@@ -163,17 +166,18 @@ public class DataManager {
     }
 
     /**
-     * Records the join time for a player.
-     * @param playerId the player's UUID
+     * Records the system time at which a player joined.
+     * @param playerId UUID of the player
      */
     public void recordJoinTime(UUID playerId) {
         joinTimes.put(playerId, System.currentTimeMillis());
     }
 
+
     /**
-     * Checks if a player is within the welcome time window.
-     * @param playerId the player's UUID
-     * @return true if within the window
+     * Checks if the player joined recently enough to still be welcomed.
+     * @param playerId UUID of the player
+     * @return true if within the welcome time window
      */
     public boolean isWithinWelcomeWindow(UUID playerId) {
         Long joinTime = joinTimes.get(playerId);
