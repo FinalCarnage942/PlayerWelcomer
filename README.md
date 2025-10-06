@@ -20,9 +20,9 @@
 
 2. **Steps**:
 
-   - Download the latest `PlayerWelcomer.jar` from the releases page or build it from source.
+   - Build the plugin  from source.
    - Place the `PlayerWelcomer.jar` file in your server's `plugins` folder.
-   - Restart your server or use `/reload` to load the plugin.
+   - Restart your server or use `/restart` to load the plugin.
    - The plugin will automatically generate `config.yml` and `data.yml` in the `plugins/PlayerWelcomer` folder.
 
 3. **Verify Installation**:
