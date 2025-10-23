@@ -8,12 +8,14 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * Manages plugin configuration, handling loading and retrieval of settings.
  * All methods are thread-safe for reading after initial load.
+ * Implements message caching for improved performance.
  */
 public class ConfigManager {
     private static final String CONFIG_FILE_NAME = "config.yml";
@@ -21,6 +23,24 @@ public class ConfigManager {
 
     private final PlayerWelcomer plugin;
     private volatile FileConfiguration config;
+
+    // Caching for processed messages
+    private final ConcurrentHashMap<String, String> messageCache = new ConcurrentHashMap<>(32);
+
+    // Cache for first-join messages (processed once)
+    private volatile String[] cachedFirstJoinMessages;
+
+    // Cache for frequently accessed config values
+    private volatile boolean welcomeCommandEnabled;
+    private volatile boolean firstJoinEnabled;
+    private volatile int welcomeCooldown;
+    private volatile String rewardType;
+    private volatile String currencyType;
+    private volatile double rewardAmount;
+    private volatile String crateKeyName;
+    private volatile String welcomeMessage;
+    private volatile String noNewPlayersMessage;
+    private volatile String cooldownMessage;
 
     public ConfigManager(PlayerWelcomer plugin) {
         this.plugin = plugin;
@@ -40,13 +60,55 @@ public class ConfigManager {
 
         config = YamlConfiguration.loadConfiguration(configFile);
 
-        boolean firstJoinEnabled = isFirstJoinMessageEnabled();
-        plugin.getPluginLogger().info("First-join message enabled: " + firstJoinEnabled);
+        // Clear caches
+        messageCache.clear();
+        cachedFirstJoinMessages = null;
 
+        // Load and cache all config values
+        loadConfigValues();
+
+        // Validate configuration
+        validateConfiguration();
+    }
+
+    /**
+     * Loads all config values into memory for fast access.
+     */
+    private void loadConfigValues() {
+        firstJoinEnabled = config.getBoolean("first-join.enabled", false);
+        welcomeCommandEnabled = config.getBoolean("welcome-command.enabled", true);
+        welcomeCooldown = config.getInt("welcome-command.cooldown", 60);
+        rewardType = config.getString("welcome-command.reward-type", "currency");
+        currencyType = config.getString("welcome-command.reward-currency", "vault");
+        rewardAmount = config.getDouble("welcome-command.reward-amount", 100.0);
+        crateKeyName = config.getString("welcome-command.crate-key-name", "Test Key");
+
+        // Pre-process and cache messages
+        welcomeMessage = processMessageInternal(config.getString(
+                "welcome-command.welcome-message",
+                "#00FF00Welcome to the server, #FFFF00%target_name%#00FF00! Welcomed by #FFFF00%player_name%"
+        ));
+
+        noNewPlayersMessage = processMessageInternal(config.getString(
+                "welcome-command.no-new-players",
+                "#FF0000That player has already been welcomed!"
+        ));
+
+        cooldownMessage = processMessageInternal(config.getString(
+                "welcome-command.cooldown-message",
+                "#FF0000Please wait %seconds% seconds before using this command again!"
+        ));
+
+        plugin.getPluginLogger().info("First-join message enabled: " + firstJoinEnabled);
+    }
+
+    /**
+     * Validates the configuration for errors.
+     */
+    private void validateConfiguration() {
         if (firstJoinEnabled) {
             validateFirstJoinMessageLines();
         }
-
         validateRewardSettings();
     }
 
@@ -63,8 +125,6 @@ public class ConfigManager {
     }
 
     private void validateRewardSettings() {
-        String rewardType = getWelcomeRewardType();
-
         if (!rewardType.equalsIgnoreCase("currency") &&
                 !rewardType.equalsIgnoreCase("crate_key")) {
             throw new RuntimeException(
@@ -77,15 +137,12 @@ public class ConfigManager {
             validateCurrencySettings();
         }
 
-        double rewardAmount = getWelcomeRewardAmount();
         if (rewardAmount <= 0) {
             throw new RuntimeException("Reward amount must be positive: " + rewardAmount);
         }
     }
 
     private void validateCurrencySettings() {
-        String currencyType = getWelcomeCurrencyType();
-
         if (currencyType == null || currencyType.trim().isEmpty()) {
             throw new RuntimeException(
                     "Currency type is missing or empty for reward-type 'currency'."
@@ -114,10 +171,23 @@ public class ConfigManager {
 
     /**
      * Processes a message to translate hex and legacy color codes.
+     * Uses caching for repeated messages to improve performance.
+     */
+    public String processMessage(String message) {
+        if (message == null) {
+            return "";
+        }
+
+        // Try to get from cache first
+        return messageCache.computeIfAbsent(message, this::processMessageInternal);
+    }
+
+    /**
+     * Internal method that actually processes the message.
      * Uses BungeeCord's ChatColor for hex support (deprecated but functional).
      */
     @SuppressWarnings("deprecation")
-    public String processMessage(String message) {
+    private String processMessageInternal(String message) {
         if (message == null) {
             return "";
         }
@@ -142,8 +212,61 @@ public class ConfigManager {
         return org.bukkit.ChatColor.translateAlternateColorCodes('&', buffer.toString());
     }
 
+    // Fast cached getters for frequently accessed values
     public boolean isFirstJoinMessageEnabled() {
-        return config.getBoolean("first-join.enabled", false);
+        return firstJoinEnabled;
+    }
+
+    public boolean isWelcomeCommandEnabled() {
+        return welcomeCommandEnabled;
+    }
+
+    public int getWelcomeCooldown() {
+        return welcomeCooldown;
+    }
+
+    public String getWelcomeRewardType() {
+        return rewardType;
+    }
+
+    public String getWelcomeCurrencyType() {
+        return currencyType;
+    }
+
+    public double getWelcomeRewardAmount() {
+        return rewardAmount;
+    }
+
+    public String getWelcomeCrateKeyName() {
+        return crateKeyName;
+    }
+
+    public String getWelcomeMessage() {
+        return welcomeMessage;
+    }
+
+    public String getNoNewPlayersMessage() {
+        return noNewPlayersMessage;
+    }
+
+    public String getCooldownMessage() {
+        return cooldownMessage;
+    }
+
+    /**
+     * Gets the first join messages, processing and caching them on first access.
+     */
+    public String[] getFirstJoinMessage() {
+        if (cachedFirstJoinMessages == null) {
+            synchronized (this) {
+                if (cachedFirstJoinMessages == null) {
+                    cachedFirstJoinMessages = Arrays.stream(getFirstJoinMessageRaw())
+                            .map(this::processMessageInternal)
+                            .toArray(String[]::new);
+                }
+            }
+        }
+        return cachedFirstJoinMessages;
     }
 
     private String[] getFirstJoinMessageRaw() {
@@ -157,62 +280,11 @@ public class ConfigManager {
         };
     }
 
-    public String[] getFirstJoinMessage() {
-        return Arrays.stream(getFirstJoinMessageRaw())
-                .map(this::processMessage)
-                .toArray(String[]::new);
-    }
-
-    public boolean isWelcomeCommandEnabled() {
-        return config.getBoolean("welcome-command.enabled", true);
-    }
-
-    public int getWelcomeCooldown() {
-        return config.getInt("welcome-command.cooldown", 60);
-    }
-
-    public String getWelcomeRewardType() {
-        return config.getString("welcome-command.reward-type", "currency");
-    }
-
-    public String getWelcomeCurrencyType() {
-        return config.getString("welcome-command.reward-currency", "vault");
-    }
-
-    public double getWelcomeRewardAmount() {
-        return config.getDouble("welcome-command.reward-amount", 100.0);
-    }
-
-    public String getWelcomeCrateKeyName() {
-        return config.getString("welcome-command.crate-key-name", "Test Key");
-    }
-
-    public String getWelcomeMessage() {
-        return processMessage(config.getString(
-                "welcome-command.welcome-message",
-                "#00FF00Welcome to the server, #FFFF00%target_name%#00FF00! Welcomed by #FFFF00%player_name%"
-        ));
-    }
-
     public String getWelcomeSuccessMessage(String rewardType) {
         String defaultMessage = rewardType.equalsIgnoreCase("crate_key") ?
                 "#00FF00You welcomed a new player and received #ADD8E6%reward_amount% %reward_display%!" :
                 "#00FF00You welcomed a new player and received #ADD8E6%reward_amount% %reward_display%!";
 
         return processMessage(config.getString("welcome-command.success-message", defaultMessage));
-    }
-
-    public String getNoNewPlayersMessage() {
-        return processMessage(config.getString(
-                "welcome-command.no-new-players",
-                "#FF0000That player has already been welcomed!"
-        ));
-    }
-
-    public String getCooldownMessage() {
-        return processMessage(config.getString(
-                "welcome-command.cooldown-message",
-                "#FF0000Please wait %seconds% seconds before using this command again!"
-        ));
     }
 }
